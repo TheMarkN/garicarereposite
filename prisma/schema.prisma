@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ATTENDANT
+  TECHNICIAN
+  INSPECTOR
+  CASHIER
+  ADMIN
+}
+enum JobStatus {
+  CHECKED_IN
+  AWAITING_APPROVAL
+  APPROVED
+  IN_PROGRESS
+  AWAITING_INSPECTION
+  REWORK_REQUIRED
+  READY_FOR_PAYMENT
+  PARTIALLY_PAID
+  PAID
+  CLOSED
+  CANCELLED
+}
+enum PaymentMethod {
+  CASH
+  MPESA
+  CARD
+}
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REVERSED
+  REFUNDED
+  PARTIALLY_PAID
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  audits       AuditLog[]
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  consent   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  vehicles  Vehicle[]
+  jobs      Job[]
+}
+
+model Vehicle {
+  id         String    @id @default(cuid())
+  plate      String    @unique   // real plate or temporary ID e.g. TMP-2026-00125
+  isTemp     Boolean   @default(false)
+  make       String?
+  model      String?
+  colour     String?
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  createdAt  DateTime  @default(now())
+  jobs       Job[]
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  taxInclusive Boolean @default(true)
+  taxRate     Decimal  @default(16) @db.Decimal(5, 2)
+  estMinutes  Int?
+  active      Boolean  @default(true)
+  jobServices JobService[]
+}
+
+model Job {
+  id         String    @id @default(cuid())
+  number     String    @unique   // JC-0001
+  vehicleId  String
+  vehicle    Vehicle   @relation(fields: [vehicleId], references: [id])
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  status     JobStatus @default(CHECKED_IN)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  closedAt   DateTime?
+  services   JobService[]
+  history    StatusHistory[]
+  approvals  Approval[]
+  payments   Payment[]
+  receipts   Receipt[]
+}
+
+model JobService {
+  id         String  @id @default(cuid())
+  jobId      String
+  job        Job     @relation(fields: [jobId], references: [id])
+  serviceId  String
+  service    Service @relation(fields: [serviceId], references: [id])
+  unitPrice  Decimal @db.Decimal(10, 2)   // price snapshot at quote time
+  quantity   Int     @default(1)
+  isExtra    Boolean @default(false)
+  assignedToId String?
+}
+
+model StatusHistory {
+  id        String    @id @default(cuid())
+  jobId     String
+  job       Job       @relation(fields: [jobId], references: [id])
+  status    JobStatus
+  userId    String?
+  reason    String?
+  createdAt DateTime  @default(now())
+}
+
+model Approval {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  amount    Decimal  @db.Decimal(10, 2)
+  isExtra   Boolean  @default(false)
+  method    String   // e.g. in-person, link
+  recordedById String?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  jobId       String
+  job         Job           @relation(fields: [jobId], references: [id])
+  amount      Decimal       @db.Decimal(10, 2)
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  providerRef String?       // M-Pesa receipt / card reference (Phase 2)
+  cashierId   String?
+  tendered    Decimal?      @db.Decimal(10, 2)
+  change      Decimal?      @db.Decimal(10, 2)
+  reconciled  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  @@index([providerRef])
+}
+
+model Receipt {
+  id        String   @id @default(cuid())
+  number    String   @unique   // RCT-0001
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  total     Decimal  @db.Decimal(10, 2)
+  taxAmount Decimal  @db.Decimal(10, 2)
+  issuedAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  record    String?
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Counter {
+  key   String @id   // "job", "receipt", "temp-2026"
+  value Int    @default(0)
+}
+
+model Booking {
+  id         String   @id @default(cuid())
+  ref        String   @unique   // BK-0001
+  name       String
+  phone      String
+  plate      String?
+  noPlate    Boolean  @default(false)
+  serviceIds String[]
+  slot       DateTime?
+  status     String   @default("BOOKED")   // BOOKED -> CHECKED_IN
+  jobNumber  String?
+  createdAt  DateTime @default(now())
+}

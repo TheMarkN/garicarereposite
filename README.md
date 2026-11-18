@@ -12,6 +12,10 @@ Next.js 14 + Prisma + Postgres (Neon). Staff screens and API in one project, dep
 Demo logins (password = SEED_PASSWORD in your .env):
 admin@garicare.test, attendant@garicare.test, technician@garicare.test, inspector@garicare.test, cashier@garicare.test
 
+## Website and staff app
+The public website is the home page (`/`). Customers book and track there. Staff sign in at `/login` and work in `/dashboard`.
+Website bookings appear under **Bookings**; click **Check in** to turn one into a job. Customers can then track it with their booking reference and phone number.
+
 ## 10-minute test (the admin account can do every step)
 1. Sign in as admin. Open **Check-in**. Enter a plate, pick two services, create the job.
 2. On the job: **Record customer approval**, then **Start work**, then **Send for inspection**.

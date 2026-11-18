@@ -19,7 +19,8 @@ All routes need a login cookie unless marked public. Roles: ATTENDANT, TECHNICIA
 | GET /api/jobs/:id/receipt | any staff | Receipt data (audited) |
 | GET /api/dashboard | any staff | Counts; money totals for cashier/admin only |
 | GET /api/bookings | attendant, admin | Website bookings |
+| GET /api/public/services | public | Live service list and prices for the website |
 | POST /api/public/bookings | public | Website booking form |
-| GET /api/public/track?ref=&phone= | public | Customer job tracking |
+| GET /api/public/track?ref=&phone= | public | Tracking by booking (BK-) or job (JC-) reference plus phone |
 
 Job flow: AWAITING_APPROVAL -> (approve) APPROVED -> IN_PROGRESS -> AWAITING_INSPECTION -> READY_FOR_PAYMENT -> (cash) PAID -> CLOSED.
