@@ -7,7 +7,7 @@ import { JOB_INCLUDE, jobTotal } from "@/lib/jobs";
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const g = await need("job:approve"); if (g.err) return g.err;
   try {
-    const b = await body(req).catch(() => ({}));
+    const b: Record<string, any> = await body(req).catch(() => ({}));
     const out = await prisma.$transaction(async tx => {
       const j = await tx.job.findUnique({ where: { id: params.id }, include: JOB_INCLUDE });
       if (!j) throw new HttpError(404, "Job not found");
