@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+export const dynamic = "force-dynamic";
 
 /** Public: the website reads the live service list and prices from here. No login. */
 export async function GET() {
